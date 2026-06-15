@@ -109,6 +109,21 @@
             </button>
           </div>
           <div id="hash-validation" class="validation-msg"></div>
+          <div id="hash-inspector" class="hash-inspector hidden">
+            <div class="inspector-title">Hash Structure Explainer</div>
+            <div class="inspector-segments">
+              <span class="segment segment-header" title="Variant" id="inspect-header"></span>
+              <span class="segment segment-rounds" title="Cost Factor" id="inspect-rounds"></span>
+              <span class="segment segment-salt" title="Salt" id="inspect-salt"></span>
+              <span class="segment segment-hash" title="Checksum" id="inspect-hash"></span>
+            </div>
+            <div class="inspector-details">
+              <div class="detail-item"><span class="bullet bullet-header"></span><strong>Variant:</strong> <span id="detail-version">—</span></div>
+              <div class="detail-item"><span class="bullet bullet-rounds"></span><strong>Cost factor:</strong> <span id="detail-rounds">—</span> (<span id="detail-iterations">—</span> rounds)</div>
+              <div class="detail-item"><span class="bullet bullet-salt"></span><strong>Salt (22 chars):</strong> <span id="detail-salt" class="mono text-truncate">—</span></div>
+              <div class="detail-item"><span class="bullet bullet-hash"></span><strong>Checksum (31 chars):</strong> <span id="detail-hash" class="mono text-truncate">—</span></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -224,6 +239,18 @@
 
         <!-- Suggestion chips -->
         <div class="chips-container" id="chips-container"></div>
+
+        <!-- Custom Wordlist Uploader -->
+        <div class="custom-wordlist-zone" id="wordlist-drop-zone">
+          <input type="file" id="wordlist-input" accept=".txt" class="sr-only" />
+          <label for="wordlist-input" class="wordlist-upload-label">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Drag & drop or click to upload custom wordlist (.txt)</span>
+          </label>
+          <div id="wordlist-info" class="wordlist-info hidden"></div>
+        </div>
       </section>
 
       <!-- Step 3: Brute Force -->
@@ -317,6 +344,9 @@
           <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="bf-progress-fill" style="width: 0%"></div>
           </div>
+          <div class="bf-visualizer-container" id="bf-visualizer-container">
+            <canvas id="bf-canvas"></canvas>
+          </div>
         </div>
       </section>
 
@@ -353,6 +383,16 @@
                 <option value="14">14 rounds</option>
               </select>
             </div>
+          </div>
+        </div>
+        <!-- Password Strength Meter -->
+        <div class="strength-meter hidden" id="strength-meter">
+          <div class="strength-bar-bg">
+            <div class="strength-bar-fill" id="strength-bar-fill"></div>
+          </div>
+          <div class="strength-meta">
+            <span class="strength-label">Strength: <strong id="strength-text">—</strong></span>
+            <span class="strength-feedback" id="strength-feedback"></span>
           </div>
         </div>
         <button id="generate-btn" class="btn-secondary" type="button">

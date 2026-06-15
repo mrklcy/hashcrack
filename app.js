@@ -168,13 +168,159 @@
     ]
   };
 
+  // Helper to generate comprehensive combinations of casing, leet speak, digits, and symbols for a base word
+  function generateBasePermutations(base) {
+    const results = new Set();
+    const b = base.toLowerCase().trim();
+    if (b.length === 0) return [];
+
+    // 1. Casing variations
+    const cap = b.charAt(0).toUpperCase() + b.slice(1);
+    const upper = b.toUpperCase();
+    results.add(b);
+    results.add(cap);
+    results.add(upper);
+
+    // 2. Leet Speak variations
+    const leetPermutations = [
+      b.replaceAll('a', '@').replaceAll('s', '$').replaceAll('o', '0').replaceAll('i', '1').replaceAll('e', '3'),
+      b.replaceAll('a', '4').replaceAll('s', '5').replaceAll('o', '0').replaceAll('i', '!').replaceAll('e', '3'),
+      b.replaceAll('s', '$').replaceAll('o', '0'),
+      b.replaceAll('a', '@').replaceAll('o', '0')
+    ];
+
+    for (const lp of leetPermutations) {
+      if (lp !== b) {
+        results.add(lp);
+        results.add(lp.charAt(0).toUpperCase() + lp.slice(1));
+      }
+    }
+
+    const wordList = [...results];
+
+    // 3. Suffix lists (digits, symbols, and combinations)
+    const suffixes = [
+      '', '1', '12', '123', '1234', '123456', '2024', '2025', '2026',
+      '!', '!!', '@', '#', '?', '*',
+      '1!', '123!', '1!@#', '!'
+    ];
+
+    const finalSet = new Set();
+    for (const word of wordList) {
+      for (const suffix of suffixes) {
+        finalSet.add(word + suffix);
+      }
+    }
+
+    return [...finalSet];
+  }
+
+  // Helper to generate combinations of common names and birthdays/years
+  function getNameBirthdayCombinations() {
+    const topNames = [
+      'michael', 'jessica', 'ashley', 'james', 'robert', 'jennifer', 'john', 'joseph', 'william', 'thomas',
+      'david', 'richard', 'charles', 'daniel', 'matthew', 'anthony', 'sarah', 'michelle', 'christopher', 'lisa',
+      'kevin', 'jason', 'brian', 'steven', 'mark', 'emily', 'emma', 'alex', 'chris', 'mike'
+    ];
+
+    const combinations = new Set();
+
+    // 1. Name + 4-digit Birth Year (e.g., John1985, john1998)
+    const years = [];
+    for (let y = 1960; y <= 2026; y++) {
+      years.push(y.toString());
+    }
+
+    // 2. Name + 2-digit Year (e.g., John85, john98, john_05)
+    const shortYears = [
+      '50', '60', '70', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89',
+      '90', '91', '92', '93', '94', '95', '96', '97', '98', '99',
+      '00', '01', '02', '03', '04', '05', '06', '07', '08', '09',
+      '10', '11', '12', '13', '14', '15', '16', '17', '18', '19',
+      '20', '21', '22', '23', '24', '25', '26'
+    ];
+
+    // 3. Common MMDD dates (e.g., John1225, john0101) - using top 10 names
+    const superTopNames = ['michael', 'jessica', 'james', 'john', 'david', 'sarah', 'chris', 'alex', 'mike', 'emily'];
+    const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    const days = ['01', '02', '05', '10', '12', '15', '20', '25', '30', '31'];
+
+    // Generate combinations
+    for (const name of topNames) {
+      const capName = name.charAt(0).toUpperCase() + name.slice(1);
+
+      // Names + 4-digit years
+      for (const y of years) {
+        combinations.add(name + y);
+        combinations.add(capName + y);
+      }
+
+      // Names + 2-digit years
+      for (const sy of shortYears) {
+        combinations.add(name + sy);
+        combinations.add(capName + sy);
+        combinations.add(name + '_' + sy);
+        combinations.add(capName + '_' + sy);
+      }
+    }
+
+    for (const name of superTopNames) {
+      const capName = name.charAt(0).toUpperCase() + name.slice(1);
+
+      // Names + MMDD
+      for (const m of months) {
+        for (const d of days) {
+          const dateStr = m + d;
+          combinations.add(name + dateStr);
+          combinations.add(capName + dateStr);
+        }
+      }
+    }
+
+    return [...combinations];
+  }
+
+  // Helper to expand common passwords dynamically with common patterns (capitalization, common numbers, symbols)
+  function getExpandedCommonPasswords() {
+    const bases = [
+      'password', 'admin', 'root', 'toor', 'guest', 'welcome', 'letmein', 'qwerty', 'monkey', 'dragon',
+      'master', 'shadow', 'sunshine', 'princess', 'love', 'iloveyou', 'pass', 'test', 'user', 'access',
+      'hello', 'secret', 'hunter', 'hunter2', 'baseball', 'computer', 'internet', 'warrior', 'wizard',
+      'google', 'netflix', 'spotify', 'gamer', 'hacker', 'football', 'charlie', 'donald', 'mustang', 'summer'
+    ];
+    
+    const variations = new Set();
+    
+    // Add raw elements from PASSWORDS
+    for (const cat of Object.keys(PASSWORDS)) {
+      for (const pw of PASSWORDS[cat]) {
+        variations.add(pw);
+        if (pw.length > 0) {
+          variations.add(pw.charAt(0).toUpperCase() + pw.slice(1));
+        }
+      }
+    }
+
+    // Add deep permutations for the top base words
+    for (const base of bases) {
+      const perms = generateBasePermutations(base);
+      for (const p of perms) {
+        variations.add(p);
+      }
+    }
+
+    // Add name + birthday permutations
+    const nameBirthdays = getNameBirthdayCombinations();
+    for (const nb of nameBirthdays) {
+      variations.add(nb);
+    }
+    
+    return [...variations];
+  }
+
   // Combine ALL dictionaries into a single unique set for auto-scan
   function getAllUniquePasswords() {
-    const all = new Set();
-    for (const cat of Object.keys(PASSWORDS)) {
-      for (const pw of PASSWORDS[cat]) all.add(pw);
-    }
-    return [...all];
+    return getExpandedCommonPasswords();
   }
 
   // ──────────────────────────────────────
@@ -238,6 +384,21 @@
     bfProgressPct: $('bf-progress-pct'),
     bfCurrentPw: $('bf-current-pw'),
     bfProgressFill: $('bf-progress-fill'),
+    // New upgrades
+    hashInspector: $('hash-inspector'),
+    detailVersion: $('detail-version'),
+    detailRounds: $('detail-rounds'),
+    detailIterations: $('detail-iterations'),
+    detailSalt: $('detail-salt'),
+    detailHash: $('detail-hash'),
+    wordlistDropZone: $('wordlist-drop-zone'),
+    wordlistInput: $('wordlist-input'),
+    wordlistInfo: $('wordlist-info'),
+    strengthMeter: $('strength-meter'),
+    strengthBarFill: $('strength-bar-fill'),
+    strengthText: $('strength-text'),
+    strengthFeedback: $('strength-feedback'),
+    bfCanvas: $('bf-canvas'),
   };
 
   let currentCategory = 'common';
@@ -247,10 +408,17 @@
   let bfRunning = false;
   let bfAbort = false;
   let bfWorkers = [];
+  let customWordlist = null;
+  let scanWorkers = [];
 
   function killBfWorkers() {
     bfWorkers.forEach(w => w.terminate());
     bfWorkers = [];
+  }
+
+  function killScanWorkers() {
+    scanWorkers.forEach(w => w.terminate());
+    scanWorkers = [];
   }
 
   let activeMode = 'auto'; // 'auto' | 'guess' | 'brute' | 'generator'
@@ -261,6 +429,7 @@
     // Abort active scan or brute force operations if changing mode
     if (isScanning) {
       scanAbort = true;
+      killScanWorkers();
     }
     if (bfRunning) {
       bfAbort = true;
@@ -537,6 +706,7 @@
       els.hashValidation.className = 'validation-msg';
       els.autoScanSection.classList.add('hidden');
       els.resultSection.classList.add('hidden');
+      els.hashInspector.classList.add('hidden');
       return;
     }
     if (isValidBcryptHash(val)) {
@@ -549,10 +719,28 @@
         els.hashValidation.className = 'validation-msg valid';
         els.autoScanSection.classList.add('hidden');
       }
+
+      // Parse hash structure
+      const match = val.match(/^\$2([aby]?)\$(\d{2})\$(.{22})(.{31})$/);
+      if (match) {
+        const variant = '2' + (match[1] || 'a');
+        const cost = parseInt(match[2], 10);
+        const salt = match[3];
+        const checksum = match[4];
+        const iterations = Math.pow(2, cost);
+
+        els.detailVersion.textContent = variant;
+        els.detailRounds.textContent = cost.toString();
+        els.detailIterations.textContent = formatNumber(iterations);
+        els.detailSalt.textContent = salt;
+        els.detailHash.textContent = checksum;
+        els.hashInspector.classList.remove('hidden');
+      }
     } else {
       els.hashValidation.textContent = '✗ Not a valid bcrypt hash format';
       els.hashValidation.className = 'validation-msg invalid';
       els.autoScanSection.classList.add('hidden');
+      els.hashInspector.classList.add('hidden');
     }
   });
 
@@ -563,7 +751,7 @@
   async function startAutoScan(hash) {
     if (isScanning) {
       scanAbort = true;
-      await yieldThread();
+      killScanWorkers();
       await yieldThread();
     }
 
@@ -574,11 +762,11 @@
     els.autoScanSection.classList.remove('found', 'done');
     els.resultSection.classList.add('hidden');
 
-    const uniquePasswords = getAllUniquePasswords();
+    const uniquePasswords = customWordlist ? customWordlist : getAllUniquePasswords();
     const total = uniquePasswords.length;
 
     els.scanTitle.textContent = `Scanning ${formatNumber(total)} passwords...`;
-    els.scanSubtitle.textContent = `Testing dictionary against your hash`;
+    els.scanSubtitle.textContent = customWordlist ? `Testing uploaded custom wordlist` : `Testing dictionary against your hash`;
     els.scanProgressFill.style.width = '0%';
     els.scanProgressFill.classList.remove('success-fill');
     els.scanCount.textContent = `0 / ${formatNumber(total)}`;
@@ -587,54 +775,113 @@
     const scanIcon = els.autoScanSection.querySelector('.scan-icon');
     scanIcon.classList.add('pulse-ring');
 
+    const startTime = Date.now();
+    let checkedAttempts = 0;
     let found = false;
     let foundPassword = '';
-    const startTime = Date.now();
 
-    for (let i = 0; i < uniquePasswords.length; i++) {
-      if (scanAbort) { isScanning = false; return; }
+    // Create inline worker code
+    const workerCode = `
+      self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js');
+      self.onmessage = function(e) {
+        const hash = e.data.hash;
+        const passwords = e.data.passwords;
+        for (let i = 0; i < passwords.length; i++) {
+          try {
+            if (self.dcodeIO.bcrypt.compareSync(passwords[i], hash)) {
+              self.postMessage({ status: 'found', password: passwords[i] });
+              return;
+            }
+          } catch(err) {}
+        }
+        self.postMessage({ status: 'done', count: passwords.length, last: passwords[passwords.length - 1] });
+      };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
 
-      const pw = uniquePasswords[i];
+    const systemCores = navigator.hardwareConcurrency || 4;
+    const concurrency = Math.max(1, systemCores - 1);
+    const BATCH_SIZE = 12;
+    let activeWorkers = 0;
+    let listIdx = 0;
 
-      // Update UI every 5 passwords
-      if (i % 5 === 0) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-        const speed = elapsed > 0 ? (i / elapsed).toFixed(1) : '—';
-        els.scanCategory.textContent = `${speed} pw/sec · ${pw}`;
+    function feedScanWorker(worker) {
+      if (scanAbort || found) return;
+
+      const batch = [];
+      for (let i = 0; i < BATCH_SIZE && listIdx < uniquePasswords.length; i++) {
+        batch.push(uniquePasswords[listIdx++]);
       }
 
-      try {
-        const match = await comparePassword(pw, hash);
-        if (match) { found = true; foundPassword = pw; }
-      } catch { /* skip */ }
-
-      const pct = ((i + 1) / total) * 100;
-      els.scanProgressFill.style.width = pct + '%';
-      els.scanCount.textContent = `${formatNumber(i + 1)} / ${formatNumber(total)}`;
-
-      if (found) break;
-      if (i % 3 === 0) await yieldThread();
+      if (batch.length > 0) {
+        worker.postMessage({ hash: hash, passwords: batch });
+      } else {
+        worker.terminate();
+        activeWorkers--;
+        if (activeWorkers === 0 && isScanning) {
+          finishAutoScan();
+        }
+      }
     }
 
-    scanIcon.classList.remove('pulse-ring');
+    function finishAutoScan() {
+      scanIcon.classList.remove('pulse-ring');
+      killScanWorkers();
+      URL.revokeObjectURL(workerUrl);
 
-    if (found) {
-      els.scanProgressFill.classList.add('success-fill');
-      els.autoScanSection.classList.add('found');
-      els.scanTitle.textContent = '🎉 Password Found!';
-      els.scanSubtitle.textContent = `Matched from dictionary in ${formatTime(Math.floor((Date.now() - startTime) / 1000))}`;
-      els.scanCategory.textContent = '';
-      showResult(true, foundPassword);
-      showToast(`✅ Found: ${foundPassword}`);
-    } else {
-      const elapsed = formatTime(Math.floor((Date.now() - startTime) / 1000));
-      els.autoScanSection.classList.add('done');
-      els.scanTitle.textContent = `Scan complete — no match (${elapsed})`;
-      els.scanSubtitle.textContent = `Tested ${formatNumber(total)} passwords. Try Step 2 or Step 3 below.`;
-      els.scanCategory.textContent = '';
+      if (found) {
+        els.scanProgressFill.classList.add('success-fill');
+        els.scanProgressFill.style.width = '100%';
+        els.autoScanSection.classList.add('found');
+        els.scanTitle.textContent = '🎉 Password Found!';
+        els.scanSubtitle.textContent = `Matched from dictionary in ${formatTime(Math.floor((Date.now() - startTime) / 1000))}`;
+        els.scanCategory.textContent = '';
+        showResult(true, foundPassword);
+        showToast(`✅ Found: ${foundPassword}`);
+      } else if (scanAbort) {
+        els.scanTitle.textContent = 'Scan stopped';
+        els.scanCategory.textContent = '';
+      } else {
+        const elapsed = formatTime(Math.floor((Date.now() - startTime) / 1000));
+        els.scanProgressFill.style.width = '100%';
+        els.autoScanSection.classList.add('done');
+        els.scanTitle.textContent = `Scan complete — no match (${elapsed})`;
+        els.scanSubtitle.textContent = `Tested ${formatNumber(total)} passwords. Try Step 2 or Step 3 below.`;
+        els.scanCategory.textContent = '';
+      }
+
+      isScanning = false;
     }
 
-    isScanning = false;
+    for (let i = 0; i < concurrency && listIdx < uniquePasswords.length; i++) {
+      const worker = new Worker(workerUrl);
+      scanWorkers.push(worker);
+      activeWorkers++;
+
+      worker.onmessage = function(e) {
+        if (e.data.status === 'found') {
+          found = true;
+          foundPassword = e.data.password;
+          finishAutoScan();
+        } else if (e.data.status === 'done') {
+          checkedAttempts += e.data.count;
+
+          // Update stats
+          const elapsed = (Date.now() - startTime) / 1000;
+          const speed = elapsed > 0 ? (checkedAttempts / elapsed).toFixed(1) : '—';
+          const pct = ((checkedAttempts / total) * 100).toFixed(1);
+
+          els.scanProgressFill.style.width = pct + '%';
+          els.scanCount.textContent = `${formatNumber(checkedAttempts)} / ${formatNumber(total)}`;
+          els.scanCategory.textContent = `${speed} pw/sec · testing: ${e.data.last}`;
+
+          feedScanWorker(worker);
+        }
+      };
+
+      feedScanWorker(worker);
+    }
   }
 
   // ──────────────────────────────────────
@@ -925,6 +1172,7 @@
     els.bfStartBtn.classList.add('hidden');
     els.bfStopBtn.classList.remove('hidden');
     els.bfStats.classList.remove('hidden');
+    startCanvasAnimation();
 
     // Reset stats
     els.bfAttempts.textContent = '0';
@@ -1015,6 +1263,7 @@
     }
 
     function finishScan() {
+      stopCanvasAnimation();
       // Final stats
       const elapsed = (Date.now() - startTime) / 1000;
       const speed = elapsed > 0 ? (attempts / elapsed).toFixed(1) : '0';
@@ -1093,6 +1342,7 @@
   els.bfStopBtn.addEventListener('click', () => {
     bfAbort = true;
     killBfWorkers();
+    stopCanvasAnimation();
     // Trigger final completion screen immediately
     const stopTrigger = document.createElement('button'); // helper dummy click
     els.bfStartBtn.classList.remove('hidden');
@@ -1137,6 +1387,196 @@
     els.hashInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     showToast('⬆ Hash moved to Auto Scan — scanning... ');
   });
+
+  // ──────────────────────────────────────
+  // Custom Wordlist Upload Zone
+  // ──────────────────────────────────────
+
+  function handleWordlistFile(file) {
+    if (!file) return;
+    if (!file.name.endsWith('.txt')) {
+      showToast('⚠ Please upload a valid text (.txt) file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) {
+        showToast('⚠ The wordlist file is empty');
+        return;
+      }
+
+      customWordlist = [...new Set(lines)]; // Deduplicate
+
+      els.wordlistInfo.textContent = `📋 Loaded "${file.name}" (${formatNumber(customWordlist.length)} passwords)`;
+      els.wordlistInfo.classList.remove('hidden');
+      showToast(`✅ Loaded ${formatNumber(customWordlist.length)} passwords!`);
+
+      // If valid hash exists, scan instantly
+      const hash = els.hashInput.value.trim();
+      if (hash && isValidBcryptHash(hash)) {
+        switchMode('auto');
+        startAutoScan(hash);
+      }
+    };
+    reader.onerror = function() {
+      showToast('❌ Error reading file');
+    };
+    reader.readAsText(file);
+  }
+
+  els.wordlistDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    els.wordlistDropZone.classList.add('dragover');
+  });
+
+  els.wordlistDropZone.addEventListener('dragleave', () => {
+    els.wordlistDropZone.classList.remove('dragover');
+  });
+
+  els.wordlistDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    els.wordlistDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleWordlistFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  els.wordlistInput.addEventListener('change', () => {
+    if (els.wordlistInput.files && els.wordlistInput.files.length > 0) {
+      handleWordlistFile(els.wordlistInput.files[0]);
+    }
+  });
+
+  // ──────────────────────────────────────
+  // Password Strength Meter
+  // ──────────────────────────────────────
+
+  els.genPasswordInput.addEventListener('input', () => {
+    const val = els.genPasswordInput.value;
+    if (val.length === 0) {
+      els.strengthMeter.classList.add('hidden');
+      return;
+    }
+
+    els.strengthMeter.classList.remove('hidden');
+
+    let score = 0;
+    if (val.length >= 6) score += 15;
+    if (val.length >= 10) score += 15;
+    if (val.length >= 14) score += 10;
+
+    if (/[a-z]/.test(val)) score += 15;
+    if (/[A-Z]/.test(val)) score += 15;
+    if (/[0-9]/.test(val)) score += 15;
+    if (/[^a-zA-Z0-9]/.test(val)) score += 15;
+
+    let strength = 'Very Weak';
+    let color = '#ff6b6b'; // var(--error)
+    let feedback = 'Too short and simple';
+
+    if (score > 80) {
+      strength = 'Excellent';
+      color = '#00cec9'; // var(--success)
+      feedback = 'Highly secure password';
+    } else if (score > 55) {
+      strength = 'Strong';
+      color = '#a29bfe'; // var(--accent-light)
+      feedback = 'Good complexity';
+    } else if (score > 35) {
+      strength = 'Medium';
+      color = '#fdcb6e'; // var(--warning)
+      feedback = 'Add letters, numbers, and symbols';
+    } else if (score > 15) {
+      strength = 'Weak';
+      color = '#ff6b6b';
+      feedback = 'Increase length and variety';
+    }
+
+    els.strengthText.textContent = strength;
+    els.strengthText.style.color = color;
+    els.strengthBarFill.style.backgroundColor = color;
+    els.strengthBarFill.style.width = score + '%';
+    els.strengthFeedback.textContent = feedback;
+  });
+
+  // ──────────────────────────────────────
+  // Digital Rain Canvas Animation
+  // ──────────────────────────────────────
+  let canvasInterval = null;
+  let canvasActive = false;
+
+  function startCanvasAnimation() {
+    const canvas = els.bfCanvas;
+    const ctx = canvas.getContext('2d');
+    canvasActive = true;
+
+    const resizeCanvas = () => {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()';
+    const charArr = chars.split('');
+    const fontSize = 10;
+    const columns = Math.floor(canvas.width / fontSize) + 1;
+    const drops = [];
+
+    for (let x = 0; x < columns; x++) {
+      drops[x] = Math.random() * -15;
+    }
+
+    function draw() {
+      if (!canvasActive) return;
+
+      ctx.fillStyle = 'rgba(10, 10, 15, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const speedMode = els.bfSpeedMode.value;
+      let fontColor = '#6c5ce7'; // Balanced
+      if (speedMode === 'faster') fontColor = '#ff6b6b'; // Faster
+      else if (speedMode === 'deep') fontColor = '#00cec9'; // Deep
+
+      ctx.fillStyle = fontColor;
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = charArr[Math.floor(Math.random() * charArr.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        ctx.fillText(text, x, y);
+
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+
+        let speedCoeff = 1.0;
+        if (speedMode === 'faster') speedCoeff = 2.0;
+        else if (speedMode === 'deep') speedCoeff = 0.5;
+
+        drops[i] += speedCoeff;
+      }
+    }
+
+    if (canvasInterval) clearInterval(canvasInterval);
+    canvasInterval = setInterval(draw, 33);
+  }
+
+  function stopCanvasAnimation() {
+    canvasActive = false;
+    if (canvasInterval) {
+      clearInterval(canvasInterval);
+      canvasInterval = null;
+    }
+    const canvas = els.bfCanvas;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
 
   // ──────────────────────────────────────
   // Keyboard shortcuts
