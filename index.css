@@ -486,7 +486,7 @@ body {
 }
 
 .bf-config { margin-bottom: var(--space-md); }
-.bf-config-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.bf-config-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-sm); }
 .bf-config-item { display: flex; flex-direction: column; }
 
 .select-full { width: 100%; height: auto; }

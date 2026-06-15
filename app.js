@@ -225,6 +225,7 @@
     // Brute-force
     bruteforceSection: $('bruteforce-section'),
     bfCharset: $('bf-charset'),
+    bfSpeedMode: $('bf-speed-mode'),
     bfMinLen: $('bf-min-len'),
     bfMaxLen: $('bf-max-len'),
     bfEstimate: $('bf-estimate'),
@@ -245,6 +246,12 @@
   let scanAbort = false;
   let bfRunning = false;
   let bfAbort = false;
+  let bfWorkers = [];
+
+  function killBfWorkers() {
+    bfWorkers.forEach(w => w.terminate());
+    bfWorkers = [];
+  }
 
   let activeMode = 'auto'; // 'auto' | 'guess' | 'brute' | 'generator'
 
@@ -839,16 +846,28 @@
     const maxLen = parseInt(els.bfMaxLen.value, 10);
     const total = calcTotalCombinations(charset.length, minLen, maxLen);
 
-    // Estimate time at ~8 hashes/sec (bcrypt is slow in JS)
-    const estimatedSeconds = Math.ceil(total / 8);
+    // Estimate speed based on mode
+    const speedMode = els.bfSpeedMode.value;
+    let estSpeed = 80; // Default Balanced
+    let modeLabel = 'Balanced';
+    if (speedMode === 'faster') {
+      estSpeed = 150;
+      modeLabel = 'Faster';
+    } else if (speedMode === 'deep') {
+      estSpeed = 15;
+      modeLabel = 'Deep';
+    }
+
+    const estimatedSeconds = Math.ceil(total / estSpeed);
 
     els.bfEstimate.innerHTML =
       `<strong>${formatNumber(total)}</strong> total combinations · ` +
-      `Charset: ${charset.length} chars · ` +
-      `Est. time: <strong>${formatTime(estimatedSeconds)}</strong> (at ~8 hash/sec)`;
+      `Mode: <strong>${modeLabel}</strong> (~${estSpeed} hash/sec) · ` +
+      `Est. time: <strong>${formatTime(estimatedSeconds)}</strong>`;
   }
 
   els.bfCharset.addEventListener('change', updateEstimate);
+  els.bfSpeedMode.addEventListener('change', updateEstimate);
   els.bfMinLen.addEventListener('change', () => {
     const minLen = parseInt(els.bfMinLen.value, 10);
     const maxLen = parseInt(els.bfMaxLen.value, 10);
@@ -922,75 +941,165 @@
     let found = false;
     let foundPw = '';
 
-    while (!bfAbort) {
-      const { value: pw, done } = gen.next();
-      if (done) break;
+    // Create inline Worker code
+    const workerCode = `
+      self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js');
+      self.onmessage = function(e) {
+        const hash = e.data.hash;
+        const passwords = e.data.passwords;
+        
+        for (let i = 0; i < passwords.length; i++) {
+          try {
+            if (self.dcodeIO.bcrypt.compareSync(passwords[i], hash)) {
+              self.postMessage({ status: 'found', password: passwords[i] });
+              return;
+            }
+          } catch(err) { /* ignore */ }
+        }
+        self.postMessage({ status: 'done', count: passwords.length, last: passwords[passwords.length - 1] });
+      };
+    `;
 
-      attempts++;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
 
-      try {
-        const match = await comparePassword(pw, hash);
-        if (match) {
-          found = true;
-          foundPw = pw;
+    // Determine concurrency and batch size based on performance mode
+    const speedMode = els.bfSpeedMode.value;
+    const systemCores = navigator.hardwareConcurrency || 4;
+    let concurrency = 1;
+    let BATCH_SIZE = 6;
+
+    if (speedMode === 'faster') {
+      concurrency = systemCores;
+      BATCH_SIZE = 25;
+    } else if (speedMode === 'balanced') {
+      concurrency = Math.max(1, systemCores - 1);
+      BATCH_SIZE = 12;
+    } else if (speedMode === 'deep') {
+      concurrency = 1;
+      BATCH_SIZE = 6;
+    }
+
+    let activeWorkers = 0;
+    let generatorDone = false;
+
+    // Helper to feed work to a single worker
+    function feedWorker(worker) {
+      if (bfAbort || found) return;
+
+      const batch = [];
+      for (let i = 0; i < BATCH_SIZE; i++) {
+        const nextPw = gen.next();
+        if (nextPw.done) {
+          generatorDone = true;
           break;
         }
-      } catch { /* skip */ }
+        batch.push(nextPw.value);
+      }
 
-      // Update stats every 3 attempts (bcrypt is slow, so this is fine)
-      if (attempts % 3 === 0) {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const speed = elapsed > 0 ? (attempts / elapsed).toFixed(1) : '0';
-        const pct = ((attempts / total) * 100).toFixed(2);
-
-        els.bfAttempts.textContent = formatNumber(attempts);
-        els.bfSpeed.textContent = `${speed} /sec`;
-        els.bfElapsed.textContent = formatTime(Math.floor(elapsed));
-        els.bfProgressPct.textContent = `${pct}%`;
-        els.bfCurrentPw.textContent = pw;
-        els.bfProgressFill.style.width = `${Math.min(parseFloat(pct), 100)}%`;
-
-        await yieldThread();
+      if (batch.length > 0) {
+        worker.postMessage({ hash: hash, passwords: batch });
+      } else {
+        // No more passwords to check
+        worker.terminate();
+        activeWorkers--;
+        checkCompletion();
       }
     }
 
-    // Final stats
-    const elapsed = (Date.now() - startTime) / 1000;
-    const speed = elapsed > 0 ? (attempts / elapsed).toFixed(1) : '0';
-    const pct = ((attempts / total) * 100).toFixed(2);
-
-    els.bfAttempts.textContent = formatNumber(attempts);
-    els.bfSpeed.textContent = `${speed} /sec`;
-    els.bfElapsed.textContent = formatTime(Math.floor(elapsed));
-    els.bfProgressPct.textContent = found ? '—' : `${pct}%`;
-
-    // Restore buttons
-    els.bfStartBtn.classList.remove('hidden');
-    els.bfStopBtn.classList.add('hidden');
-
-    if (found) {
-      els.bfProgressFill.classList.add('success-fill');
-      els.bfProgressFill.style.width = '100%';
-      els.bfCurrentPw.textContent = foundPw;
-      els.bfCurrentPw.style.color = 'var(--success)';
-      showResult(true, foundPw);
-      showToast(`✅ Brute-forced: ${foundPw}`);
-    } else if (bfAbort) {
-      els.bfCurrentPw.textContent = 'Stopped by user';
-      showToast('⏹ Brute-force stopped');
-    } else {
-      els.bfProgressFill.style.width = '100%';
-      els.bfCurrentPw.textContent = 'No match found';
-      showToast('❌ Exhausted all combinations — no match');
+    // Check if everything is finished
+    function checkCompletion() {
+      if (activeWorkers === 0 && bfRunning) {
+        finishScan();
+      }
     }
 
-    bfRunning = false;
-    els.bfCurrentPw.style.color = '';
+    function finishScan() {
+      // Final stats
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? (attempts / elapsed).toFixed(1) : '0';
+      const pct = ((attempts / total) * 100).toFixed(2);
+
+      els.bfAttempts.textContent = formatNumber(attempts);
+      els.bfSpeed.textContent = `${speed} /sec`;
+      els.bfElapsed.textContent = formatTime(Math.floor(elapsed));
+      els.bfProgressPct.textContent = found ? '—' : `${pct}%`;
+
+      // Restore buttons
+      els.bfStartBtn.classList.remove('hidden');
+      els.bfStopBtn.classList.add('hidden');
+
+      if (found) {
+        els.bfProgressFill.classList.add('success-fill');
+        els.bfProgressFill.style.width = '100%';
+        els.bfCurrentPw.textContent = foundPw;
+        els.bfCurrentPw.style.color = 'var(--success)';
+        showResult(true, foundPw);
+        showToast(`✅ Brute-forced: ${foundPw}`);
+      } else if (bfAbort) {
+        els.bfCurrentPw.textContent = 'Stopped by user';
+        showToast('⏹ Brute-force stopped');
+      } else {
+        els.bfProgressFill.style.width = '100%';
+        els.bfCurrentPw.textContent = 'No match found';
+        showToast('❌ Exhausted all combinations — no match');
+      }
+
+      killBfWorkers();
+      URL.revokeObjectURL(workerUrl);
+      bfRunning = false;
+      els.bfCurrentPw.style.color = '';
+    }
+
+    // Initialize worker pool
+    for (let i = 0; i < concurrency; i++) {
+      if (generatorDone) break;
+
+      const worker = new Worker(workerUrl);
+      bfWorkers.push(worker);
+      activeWorkers++;
+
+      worker.onmessage = function(e) {
+        if (e.data.status === 'found') {
+          found = true;
+          foundPw = e.data.password;
+          finishScan();
+        } else if (e.data.status === 'done') {
+          attempts += e.data.count;
+
+          // Update stats dynamically
+          const elapsed = (Date.now() - startTime) / 1000;
+          const speed = elapsed > 0 ? (attempts / elapsed).toFixed(1) : '0';
+          const pct = ((attempts / total) * 100).toFixed(2);
+
+          els.bfAttempts.textContent = formatNumber(attempts);
+          els.bfSpeed.textContent = `${speed} /sec`;
+          els.bfElapsed.textContent = formatTime(Math.floor(elapsed));
+          els.bfProgressPct.textContent = `${pct}%`;
+          els.bfCurrentPw.textContent = e.data.last;
+          els.bfProgressFill.style.width = `${Math.min(parseFloat(pct), 100)}%`;
+
+          // Feed next batch
+          feedWorker(worker);
+        }
+      };
+
+      // Feed first batch
+      feedWorker(worker);
+    }
   });
 
   // Stop brute-force
   els.bfStopBtn.addEventListener('click', () => {
     bfAbort = true;
+    killBfWorkers();
+    // Trigger final completion screen immediately
+    const stopTrigger = document.createElement('button'); // helper dummy click
+    els.bfStartBtn.classList.remove('hidden');
+    els.bfStopBtn.classList.add('hidden');
+    els.bfCurrentPw.textContent = 'Stopped by user';
+    showToast('⏹ Brute-force stopped');
+    bfRunning = false;
   });
 
   // ──────────────────────────────────────
