@@ -225,6 +225,7 @@
     // Brute-force
     bruteforceSection: $('bruteforce-section'),
     bfCharset: $('bf-charset'),
+    bfMinLen: $('bf-min-len'),
     bfMaxLen: $('bf-max-len'),
     bfEstimate: $('bf-estimate'),
     bfStartBtn: $('bf-start-btn'),
@@ -823,9 +824,9 @@
   };
 
   // Calculate total combinations
-  function calcTotalCombinations(charsetLen, maxLen) {
+  function calcTotalCombinations(charsetLen, minLen, maxLen) {
     let total = 0;
-    for (let len = 1; len <= maxLen; len++) {
+    for (let len = minLen; len <= maxLen; len++) {
       total += Math.pow(charsetLen, len);
     }
     return total;
@@ -834,8 +835,9 @@
   // Update estimate display
   function updateEstimate() {
     const charset = CHARSETS[els.bfCharset.value] || CHARSETS['lower-digits'];
+    const minLen = parseInt(els.bfMinLen.value, 10);
     const maxLen = parseInt(els.bfMaxLen.value, 10);
-    const total = calcTotalCombinations(charset.length, maxLen);
+    const total = calcTotalCombinations(charset.length, minLen, maxLen);
 
     // Estimate time at ~8 hashes/sec (bcrypt is slow in JS)
     const estimatedSeconds = Math.ceil(total / 8);
@@ -847,15 +849,30 @@
   }
 
   els.bfCharset.addEventListener('change', updateEstimate);
-  els.bfMaxLen.addEventListener('change', updateEstimate);
+  els.bfMinLen.addEventListener('change', () => {
+    const minLen = parseInt(els.bfMinLen.value, 10);
+    const maxLen = parseInt(els.bfMaxLen.value, 10);
+    if (minLen > maxLen) {
+      els.bfMaxLen.value = minLen.toString();
+    }
+    updateEstimate();
+  });
+  els.bfMaxLen.addEventListener('change', () => {
+    const minLen = parseInt(els.bfMinLen.value, 10);
+    const maxLen = parseInt(els.bfMaxLen.value, 10);
+    if (maxLen < minLen) {
+      els.bfMinLen.value = maxLen.toString();
+    }
+    updateEstimate();
+  });
   updateEstimate();
 
   // Brute-force password generator (iterator)
-  function* bruteForceGenerator(charset, maxLen) {
+  function* bruteForceGenerator(charset, minLen, maxLen) {
     const chars = charset.split('');
     const base = chars.length;
 
-    for (let len = 1; len <= maxLen; len++) {
+    for (let len = minLen; len <= maxLen; len++) {
       // Generate all combinations of this length
       const totalForLen = Math.pow(base, len);
       for (let i = 0; i < totalForLen; i++) {
@@ -881,8 +898,9 @@
     bfAbort = false;
 
     const charset = CHARSETS[els.bfCharset.value] || CHARSETS['lower-digits'];
+    const minLen = parseInt(els.bfMinLen.value, 10);
     const maxLen = parseInt(els.bfMaxLen.value, 10);
-    const total = calcTotalCombinations(charset.length, maxLen);
+    const total = calcTotalCombinations(charset.length, minLen, maxLen);
 
     // Show/hide buttons
     els.bfStartBtn.classList.add('hidden');
@@ -898,7 +916,7 @@
     els.bfProgressFill.style.width = '0%';
     els.bfProgressFill.classList.remove('success-fill');
 
-    const gen = bruteForceGenerator(charset, maxLen);
+    const gen = bruteForceGenerator(charset, minLen, maxLen);
     const startTime = Date.now();
     let attempts = 0;
     let found = false;
