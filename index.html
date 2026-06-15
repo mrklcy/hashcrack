@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HashCrack — Bcrypt Password Matcher</title>
+  <meta name="description" content="A sleek bcrypt hash checker that auto-detects matching passwords with smart suggestions." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <!-- Animated background orbs -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header" id="app-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h1 class="logo-text">Hash<span class="accent">Crack</span></h1>
+      </div>
+      <p class="tagline">Paste a bcrypt hash — we'll brute-force the password</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Step 1: Hash Input -->
+      <section class="card glass-card" id="hash-section">
+        <div class="step-badge">Step 1</div>
+        <h2 class="card-title-lg">Paste your bcrypt hash</h2>
+        <p class="card-subtitle">We'll automatically start searching for the matching password.</p>
+        <div class="input-group">
+          <div class="input-wrapper input-wrapper-lg">
+            <input
+              type="text"
+              id="hash-input"
+              class="text-input text-input-lg mono"
+              placeholder="$2b$10$N9qo8uLOickgx2ZMRZoMye..."
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <button id="paste-btn" class="icon-btn" title="Paste from clipboard" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+          <div id="hash-validation" class="validation-msg"></div>
+        </div>
+      </section>
+
+      <!-- Auto-Scan Status -->
+      <section id="auto-scan-section" class="card glass-card scan-card hidden">
+        <div class="scan-header">
+          <div class="scan-icon pulse-ring">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <div class="scan-info">
+            <h3 id="scan-title">Scanning common passwords...</h3>
+            <p id="scan-subtitle" class="scan-sub">Checking dictionary against your hash</p>
+          </div>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="scan-progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="scan-count" class="progress-text">0 / 0</span>
+          <span id="scan-category" class="progress-text"></span>
+        </div>
+      </section>
+
+      <!-- Result Section -->
+      <section id="result-section" class="card glass-card result-card hidden">
+        <div id="result-content"></div>
+      </section>
+
+      <!-- Step 2: Manual / Smart Guess -->
+      <section class="card glass-card" id="password-section">
+        <div class="step-badge">Step 2</div>
+        <h2 class="card-title-lg">Or try your own guess</h2>
+        <p class="card-subtitle">Type a password — we'll check it <em>and</em> dozens of smart variations.</p>
+        <div class="input-group">
+          <div class="input-wrapper input-wrapper-lg">
+            <input
+              type="text"
+              id="password-input"
+              class="text-input text-input-lg"
+              placeholder="Type a password guess..."
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <button id="toggle-visibility" class="icon-btn" title="Toggle visibility" type="button">
+              <svg id="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Smart Check Button -->
+        <button id="smart-check-btn" class="btn-primary" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>Smart Check (with variations)</span>
+        </button>
+
+        <!-- Variation preview -->
+        <div id="variations-preview" class="variations-preview hidden">
+          <p class="variations-label">Variations we'll try:</p>
+          <div id="variations-chips" class="chips-container"></div>
+        </div>
+      </section>
+
+      <!-- Variation Results -->
+      <section id="variation-results-section" class="card glass-card hidden">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Variation Results</h2>
+        </div>
+        <div id="variation-results-list" class="variation-results-list"></div>
+      </section>
+
+      <!-- Quick Suggestions -->
+      <section class="card glass-card" id="suggestions-section">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Quick Dictionary</h2>
+          <span class="badge">Click to try</span>
+        </div>
+        <p class="card-description">Tap any password to auto-fill and check it instantly.</p>
+
+        <!-- Category Tabs -->
+        <div class="tabs" id="suggestion-tabs" role="tablist">
+          <button class="tab active" data-category="common" role="tab" id="tab-common">Common</button>
+          <button class="tab" data-category="numeric" role="tab" id="tab-numeric">Numeric</button>
+          <button class="tab" data-category="keyboard" role="tab" id="tab-keyboard">Keyboard</button>
+          <button class="tab" data-category="names" role="tab" id="tab-names">Names</button>
+          <button class="tab" data-category="phrases" role="tab" id="tab-phrases">Phrases</button>
+          <button class="tab" data-category="years" role="tab" id="tab-years">Years</button>
+        </div>
+
+        <!-- Suggestion chips -->
+        <div class="chips-container" id="chips-container"></div>
+      </section>
+
+      <!-- Step 3: Brute Force -->
+      <section class="card glass-card" id="bruteforce-section">
+        <div class="step-badge step-badge-danger">Step 3</div>
+        <h2 class="card-title-lg">Brute-Force Attack</h2>
+        <p class="card-subtitle">Systematically try every character combination. Starts short and works up.</p>
+
+        <div class="bf-config">
+          <div class="bf-config-row">
+            <div class="bf-config-item">
+              <label for="bf-charset" class="input-label">Character Set</label>
+              <select id="bf-charset" class="select-input select-full">
+                <option value="lower">a-z (lowercase)</option>
+                <option value="digits">0-9 (digits only)</option>
+                <option value="lower-digits" selected>a-z + 0-9</option>
+                <option value="mixed">a-z + A-Z + 0-9</option>
+                <option value="all">a-z + A-Z + 0-9 + symbols</option>
+              </select>
+            </div>
+            <div class="bf-config-item">
+              <label for="bf-max-len" class="input-label">Max Length</label>
+              <select id="bf-max-len" class="select-input select-full">
+                <option value="3">3 characters</option>
+                <option value="4" selected>4 characters</option>
+                <option value="5">5 characters</option>
+                <option value="6">6 characters (slow)</option>
+              </select>
+            </div>
+          </div>
+          <div id="bf-estimate" class="bf-estimate"></div>
+        </div>
+
+        <div class="bf-buttons">
+          <button id="bf-start-btn" class="btn-danger" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span>Start Brute-Force</span>
+          </button>
+          <button id="bf-stop-btn" class="btn-secondary hidden" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            <span>Stop</span>
+          </button>
+        </div>
+
+        <!-- Live stats -->
+        <div id="bf-stats" class="bf-stats hidden">
+          <div class="bf-stats-grid">
+            <div class="bf-stat">
+              <span class="bf-stat-label">Attempts</span>
+              <span class="bf-stat-value mono" id="bf-attempts">0</span>
+            </div>
+            <div class="bf-stat">
+              <span class="bf-stat-label">Speed</span>
+              <span class="bf-stat-value mono" id="bf-speed">0 /sec</span>
+            </div>
+            <div class="bf-stat">
+              <span class="bf-stat-label">Elapsed</span>
+              <span class="bf-stat-value mono" id="bf-elapsed">0s</span>
+            </div>
+            <div class="bf-stat">
+              <span class="bf-stat-label">Progress</span>
+              <span class="bf-stat-value mono" id="bf-progress-pct">0%</span>
+            </div>
+          </div>
+          <div class="bf-current">
+            <span class="bf-current-label">Testing:</span>
+            <span class="bf-current-value mono" id="bf-current-pw">—</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="bf-progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bcrypt Generator -->
+      <section class="card glass-card" id="generator-section">
+        <div class="card-header">
+          <div class="card-icon icon-alt">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Hash Generator</h2>
+          <span class="badge badge-alt">Tool</span>
+        </div>
+        <p class="card-description">Generate a bcrypt hash from any password for testing.</p>
+        <div class="input-group">
+          <div class="input-row">
+            <div class="input-wrapper" style="flex:1">
+              <input
+                type="text"
+                id="gen-password-input"
+                class="text-input"
+                placeholder="Password to hash..."
+                spellcheck="false"
+                autocomplete="off"
+              />
+            </div>
+            <div class="rounds-select">
+              <label for="rounds-input" class="sr-only">Rounds</label>
+              <select id="rounds-input" class="select-input">
+                <option value="8">8 rounds</option>
+                <option value="10" selected>10 rounds</option>
+                <option value="12">12 rounds</option>
+                <option value="14">14 rounds</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button id="generate-btn" class="btn-secondary" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>Generate Hash</span>
+        </button>
+        <div id="generated-hash" class="generated-hash hidden">
+          <div class="generated-hash-row">
+            <code id="generated-hash-text" class="mono"></code>
+            <div class="generated-hash-actions">
+              <button id="copy-hash-btn" class="icon-btn-inline" title="Copy hash" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy
+              </button>
+              <button id="use-hash-btn" class="icon-btn-inline accent-btn" title="Use this hash" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+                </svg>
+                Use
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="app-footer">
+      <p>🔒 HashCrack runs entirely in your browser. No data leaves your device.</p>
+    </footer>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
