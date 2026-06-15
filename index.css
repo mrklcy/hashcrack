@@ -539,10 +539,91 @@ body {
 .bf-current-label { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
 .bf-current-value { font-size: 0.82rem; color: var(--warning); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* --- Mode Cards Grid --- */
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  animation: fade-up 0.6s var(--ease-out) both;
+}
+
+.mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  background: var(--bg-card);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  outline: none;
+}
+
+.mode-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  background: var(--bg-card-hover);
+}
+
+.mode-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.mode-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--accent-bg);
+  color: var(--accent-light);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  transition: transform var(--duration-normal) var(--ease-spring), background var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out);
+}
+
+.mode-card.active .mode-card-icon {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: white;
+}
+
+.mode-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mode-card-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .hidden { display: none; }
 
 /* --- Responsive --- */
 @media (max-width: 640px) {
+  .modes-grid { grid-template-columns: 1fr; gap: var(--space-sm); }
+  .mode-card { padding: var(--space-sm); border-radius: var(--radius-md); }
+  .mode-card-icon { width: 36px; height: 36px; }
+  .mode-card-title { font-size: 0.9rem; }
+  .mode-card-desc { font-size: 0.74rem; }
   .app-container { padding: var(--space-md) var(--space-sm); }
   .header { padding: var(--space-xl) 0 var(--space-md); }
   .logo-text { font-size: 1.6rem; }

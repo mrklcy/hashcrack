@@ -183,8 +183,10 @@
   const $ = id => document.getElementById(id);
 
   const els = {
+    hashSection: $('hash-section'),
     hashInput: $('hash-input'),
     hashValidation: $('hash-validation'),
+    passwordSection: $('password-section'),
     passwordInput: $('password-input'),
     pasteBtn: $('paste-btn'),
     toggleVisibility: $('toggle-visibility'),
@@ -199,12 +201,14 @@
     scanProgressFill: $('scan-progress-fill'),
     scanCount: $('scan-count'),
     scanCategory: $('scan-category'),
+    suggestionsSection: $('suggestions-section'),
     chipsContainer: $('chips-container'),
     suggestionTabs: $('suggestion-tabs'),
     variationsPreview: $('variations-preview'),
     variationsChips: $('variations-chips'),
     variationResultsSection: $('variation-results-section'),
     variationResultsList: $('variation-results-list'),
+    generatorSection: $('generator-section'),
     genPasswordInput: $('gen-password-input'),
     roundsInput: $('rounds-input'),
     generateBtn: $('generate-btn'),
@@ -213,7 +217,13 @@
     copyHashBtn: $('copy-hash-btn'),
     useHashBtn: $('use-hash-btn'),
     toastContainer: $('toast-container'),
+    // Mode Cards
+    modeCardAuto: $('mode-card-auto'),
+    modeCardGuess: $('mode-card-guess'),
+    modeCardBrute: $('mode-card-brute'),
+    modeCardGenerator: $('mode-card-generator'),
     // Brute-force
+    bruteforceSection: $('bruteforce-section'),
     bfCharset: $('bf-charset'),
     bfMaxLen: $('bf-max-len'),
     bfEstimate: $('bf-estimate'),
@@ -234,6 +244,65 @@
   let scanAbort = false;
   let bfRunning = false;
   let bfAbort = false;
+
+  let activeMode = 'auto'; // 'auto' | 'guess' | 'brute' | 'generator'
+
+  function switchMode(mode) {
+    if (activeMode === mode) return;
+
+    // Abort active scan or brute force operations if changing mode
+    if (isScanning) {
+      scanAbort = true;
+    }
+    if (bfRunning) {
+      bfAbort = true;
+      els.bfStopBtn.click(); // Stop the brute force runner
+    }
+
+    activeMode = mode;
+
+    const cards = [els.modeCardAuto, els.modeCardGuess, els.modeCardBrute, els.modeCardGenerator];
+    cards.forEach(card => card.classList.remove('active'));
+
+    els.hashSection.classList.add('hidden');
+    els.autoScanSection.classList.add('hidden');
+    els.passwordSection.classList.add('hidden');
+    els.suggestionsSection.classList.add('hidden');
+    els.variationResultsSection.classList.add('hidden');
+    els.bruteforceSection.classList.add('hidden');
+    els.generatorSection.classList.add('hidden');
+
+    switch (mode) {
+      case 'auto':
+        els.modeCardAuto.classList.add('active');
+        els.hashSection.classList.remove('hidden');
+        const currentHash = els.hashInput.value.trim();
+        if (currentHash && isValidBcryptHash(currentHash)) {
+          startAutoScan(currentHash);
+        }
+        break;
+      case 'guess':
+        els.modeCardGuess.classList.add('active');
+        els.hashSection.classList.remove('hidden');
+        els.passwordSection.classList.remove('hidden');
+        els.suggestionsSection.classList.remove('hidden');
+        break;
+      case 'brute':
+        els.modeCardBrute.classList.add('active');
+        els.hashSection.classList.remove('hidden');
+        els.bruteforceSection.classList.remove('hidden');
+        break;
+      case 'generator':
+        els.modeCardGenerator.classList.add('active');
+        els.generatorSection.classList.remove('hidden');
+        break;
+    }
+  }
+
+  els.modeCardAuto.addEventListener('click', () => switchMode('auto'));
+  els.modeCardGuess.addEventListener('click', () => switchMode('guess'));
+  els.modeCardBrute.addEventListener('click', () => switchMode('brute'));
+  els.modeCardGenerator.addEventListener('click', () => switchMode('generator'));
 
   // ──────────────────────────────────────
   // Utilities
@@ -451,18 +520,31 @@
     const val = els.hashInput.value.trim();
     clearTimeout(hashDebounce);
 
+    if (isScanning) {
+      scanAbort = true;
+    }
+
     if (!val) {
       els.hashValidation.textContent = '';
       els.hashValidation.className = 'validation-msg';
+      els.autoScanSection.classList.add('hidden');
+      els.resultSection.classList.add('hidden');
       return;
     }
     if (isValidBcryptHash(val)) {
-      els.hashValidation.textContent = '✓ Valid bcrypt hash — auto-scanning...';
-      els.hashValidation.className = 'validation-msg valid';
-      hashDebounce = setTimeout(() => startAutoScan(val), 400);
+      if (activeMode === 'auto') {
+        els.hashValidation.textContent = '✓ Valid bcrypt hash — auto-scanning...';
+        els.hashValidation.className = 'validation-msg valid';
+        hashDebounce = setTimeout(() => startAutoScan(val), 400);
+      } else {
+        els.hashValidation.textContent = '✓ Valid bcrypt hash';
+        els.hashValidation.className = 'validation-msg valid';
+        els.autoScanSection.classList.add('hidden');
+      }
     } else {
       els.hashValidation.textContent = '✗ Not a valid bcrypt hash format';
       els.hashValidation.className = 'validation-msg invalid';
+      els.autoScanSection.classList.add('hidden');
     }
   });
 
@@ -922,10 +1004,11 @@
 
   els.useHashBtn.addEventListener('click', () => {
     const hash = els.generatedHashText.textContent;
+    switchMode('auto');
     els.hashInput.value = hash;
     els.hashInput.dispatchEvent(new Event('input'));
     els.hashInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('⬆ Hash moved to Step 1 — scanning...');
+    showToast('⬆ Hash moved to Auto Scan — scanning... ');
   });
 
   // ──────────────────────────────────────

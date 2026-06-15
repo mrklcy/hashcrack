@@ -36,9 +36,59 @@
     <!-- Main Content -->
     <main class="main-content">
 
+      <!-- Mode Selection Grid -->
+      <div class="modes-grid">
+        <button type="button" class="mode-card active" id="mode-card-auto">
+          <div class="mode-card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <h3 class="mode-card-title">Auto Scan</h3>
+            <p class="mode-card-desc">Check 2,500+ common passwords automatically</p>
+          </div>
+        </button>
+
+        <button type="button" class="mode-card" id="mode-card-guess">
+          <div class="mode-card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <h3 class="mode-card-title">Smart Guess</h3>
+            <p class="mode-card-desc">Test a custom password & its variations</p>
+          </div>
+        </button>
+
+        <button type="button" class="mode-card" id="mode-card-brute">
+          <div class="mode-card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <h3 class="mode-card-title">Brute Force</h3>
+            <p class="mode-card-desc">Systematic character combination search</p>
+          </div>
+        </button>
+
+        <button type="button" class="mode-card" id="mode-card-generator">
+          <div class="mode-card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <h3 class="mode-card-title">Hash Generator</h3>
+            <p class="mode-card-desc">Create bcrypt hashes for testing</p>
+          </div>
+        </button>
+      </div>
+
       <!-- Step 1: Hash Input -->
       <section class="card glass-card" id="hash-section">
-        <div class="step-badge">Step 1</div>
         <h2 class="card-title-lg">Paste your bcrypt hash</h2>
         <p class="card-subtitle">We'll automatically start searching for the matching password.</p>
         <div class="input-group">
@@ -90,8 +140,7 @@
       </section>
 
       <!-- Step 2: Manual / Smart Guess -->
-      <section class="card glass-card" id="password-section">
-        <div class="step-badge">Step 2</div>
+      <section class="card glass-card hidden" id="password-section">
         <h2 class="card-title-lg">Or try your own guess</h2>
         <p class="card-subtitle">Type a password — we'll check it <em>and</em> dozens of smart variations.</p>
         <div class="input-group">
@@ -148,7 +197,7 @@
       </section>
 
       <!-- Quick Suggestions -->
-      <section class="card glass-card" id="suggestions-section">
+      <section class="card glass-card hidden" id="suggestions-section">
         <div class="card-header">
           <div class="card-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -178,8 +227,7 @@
       </section>
 
       <!-- Step 3: Brute Force -->
-      <section class="card glass-card" id="bruteforce-section">
-        <div class="step-badge step-badge-danger">Step 3</div>
+      <section class="card glass-card hidden" id="bruteforce-section">
         <h2 class="card-title-lg">Brute-Force Attack</h2>
         <p class="card-subtitle">Systematically try every character combination. Starts short and works up.</p>
 
@@ -254,7 +302,7 @@
       </section>
 
       <!-- Bcrypt Generator -->
-      <section class="card glass-card" id="generator-section">
+      <section class="card glass-card hidden" id="generator-section">
         <div class="card-header">
           <div class="card-icon icon-alt">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
